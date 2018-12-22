@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 from sklearn import tree
-import csv
+from sklearn import neighbors
+import numpy as np
 import sys
 import sqlite3
 
@@ -30,7 +31,6 @@ def generate_input_array(lyric_rows, words):
 
     return input
 
-
 def fetch(track_id):
     conn = sqlite3.connect('/Users/julio.barros/mxmtch.db')
     cursor = conn.cursor()
@@ -40,12 +40,13 @@ def fetch(track_id):
     conn.close()
     return lines
 
-def find_genre(track_id):
-    with open('/Users/julio.barros/Downloads/msd_tagtraum_cd2.cls', newline='') as csvfile:
-        songreader = csv.reader(csvfile, delimiter='\t', dialect='unix')
-        for row in songreader:
-            if row[0].strip() == track_id:
-                return style_to_number(row[1].strip())
+def find_genre2(track_id, songs):
+    for row in songs:
+        if row[0].strip() == track_id:
+            return style_to_number(row[1].strip())
+
+def find_genre(row):
+    return style_to_number(row[1].strip())
 
 def style_to_number(style):
     return {
@@ -94,27 +95,47 @@ if __name__ == '__main__':
     x = []
     y = []
     i = 0
+    TRAIN = 20000
+    songs = np.genfromtxt('musicas_cons2.csv', delimiter='\t', usecols=range(2), dtype=str)
 
-    with open('/Users/julio.barros/chamine-learning/musicas_nos_2_2.csv', newline='') as csvfile:
-        songreader = csv.reader(csvfile, delimiter='\t', dialect='unix')
-        for row in songreader:
-            x.append( generate_input_array(fetch(track_id=row[0].strip()), words) )
-            y.append( find_genre(track_id=row[0].strip()) )
-            i += 1
-            if i > 5000: break
+    print("Songs fetched.")
+
+    for row in songs:
+        x.append( generate_input_array(fetch(track_id=row[0].strip()), words) )
+        y.append( find_genre(row) )
+        i += 1
+        if i > TRAIN: break
 
     print('Finished creating inputs, classifying...')
-    clf = tree.DecisionTreeClassifier()
+    clf = neighbors.NearestNeighbors(n_neighbors=2, algorithm='ball_tree')
+    # clf = tree.DecisionTreeClassifier()
     clf.fit(list(x), list(y))
-    print('Classified! Let`s fit, write a track_id and we will try to predict')
-    print('(Press [x] to exit)')
+    print('Classified! Let`s test')
 
     x2 = []
+    i = 0
+    right = 0
+
+    while i < 6000:
+        x2.append(generate_input_array(fetch(track_id=songs[i+TRAIN][0].strip()), words))
+        result = number_to_style(clf.predict(x2)[0])
+        expected = number_to_style(find_genre(songs[i+TRAIN]))
+        if (result == expected):
+            right += 1
+
+        x2.clear()
+        i += 1
+
+    print('Trialed accuracy: ', right*100 / i, '%')
+
+    print('Let`s fit, write a track_id and we will try to predict')
+    print('(Press [x] to exit)')
+
     for line in sys.stdin:
         if line.strip() == 'x': break
         x2.append(generate_input_array(fetch(track_id=line.strip()), words))
         print('Result: ', number_to_style(clf.predict(x2)[0]))
-        print('Expected: ', number_to_style(find_genre(track_id=line.strip())))
+        print('Expected: ', number_to_style(find_genre2(track_id=line.strip(), songs=songs)))
         x2.clear()
         pass
             # print('musica id:', row[0].strip(), ' | estilo:', row[1].strip())
