@@ -123,17 +123,19 @@ if __name__ == '__main__':
         if i > TRAIN: break
 
     print('Finished creating inputs, classifying...')
-    clf = tree.DecisionTreeClassifier(min_samples_leaf=30)#, algorithm='ball_tree')
+    clf = tree.DecisionTreeClassifier(min_samples_leaf=20)#, algorithm='ball_tree')
     # clf = tree.DecisionTreeClassifier()
     clf.fit(list(x), list(y))
     print('Classified after ', fetched ,' fetched! Let`s test')
 
     x2 = []
-    i = 1
+    i = 0
+    j = fetched
     right = 0
 
     while i < 6000:
-        genre = find_genre(songs[i+fetched])
+        j += 1
+        genre = find_genre(songs[j])
         if genre == 5:
             rock_modifier += 1
             if rock_modifier % 8 != 0:
@@ -143,7 +145,7 @@ if __name__ == '__main__':
                 pop_modifier += 1
                 if pop_modifier % 4 != 0:
                     continue
-        x2.append(generate_input_array(fetch(track_id=songs[i+fetched][0].strip()), words))
+        x2.append(generate_input_array(fetch(track_id=songs[j][0].strip()), words))
         result = number_to_style(clf.predict(x2)[0])
         expected = number_to_style(genre)
         if (result == expected):
