@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 from sklearn import tree
-from sklearn import neighbors
+#from sklearn import neighbors
+#from sklearn import svm
 import numpy as np
 import sys
 import sqlite3
@@ -95,31 +96,56 @@ if __name__ == '__main__':
     x = []
     y = []
     i = 0
-    TRAIN = 20000
+    TRAIN = 25000
+    fetched = 0
     songs = np.genfromtxt('musicas_cons2.csv', delimiter='\t', usecols=range(2), dtype=str)
+
+    rock_modifier = 0
+    pop_modifier = 0
 
     print("Songs fetched.")
 
     for row in songs:
+        fetched += 1
+        genre = find_genre(row)
+        if genre == 5:
+            rock_modifier += 1
+            if rock_modifier % 8 != 0:
+                continue
+        else:
+            if genre == 4:
+                pop_modifier += 1
+                if pop_modifier % 4 != 0:
+                    continue
         x.append( generate_input_array(fetch(track_id=row[0].strip()), words) )
-        y.append( find_genre(row) )
+        y.append( genre )
         i += 1
         if i > TRAIN: break
 
     print('Finished creating inputs, classifying...')
-    clf = neighbors.NearestNeighbors(n_neighbors=2, algorithm='ball_tree')
+    clf = tree.DecisionTreeClassifier(min_samples_leaf=30)#, algorithm='ball_tree')
     # clf = tree.DecisionTreeClassifier()
     clf.fit(list(x), list(y))
-    print('Classified! Let`s test')
+    print('Classified after ', fetched ,' fetched! Let`s test')
 
     x2 = []
-    i = 0
+    i = 1
     right = 0
 
     while i < 6000:
-        x2.append(generate_input_array(fetch(track_id=songs[i+TRAIN][0].strip()), words))
+        genre = find_genre(songs[i+fetched])
+        if genre == 5:
+            rock_modifier += 1
+            if rock_modifier % 8 != 0:
+                continue
+        else:
+            if genre == 4:
+                pop_modifier += 1
+                if pop_modifier % 4 != 0:
+                    continue
+        x2.append(generate_input_array(fetch(track_id=songs[i+fetched][0].strip()), words))
         result = number_to_style(clf.predict(x2)[0])
-        expected = number_to_style(find_genre(songs[i+TRAIN]))
+        expected = number_to_style(genre)
         if (result == expected):
             right += 1
 
