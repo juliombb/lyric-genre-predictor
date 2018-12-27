@@ -8,7 +8,7 @@ import sys
 import sqlite3
 
 def read_everyone_from_db():
-    conn = sqlite3.connect('/Users/julio.barros/mxmtch.db')
+    conn = sqlite3.connect('mxmtch.db')
     cursor = conn.cursor()
 
     cursor.execute("SELECT distinct track_id from lyrics")
@@ -17,7 +17,7 @@ def read_everyone_from_db():
     return everyone
 
 def fetch_words():
-    conn = sqlite3.connect('/Users/julio.barros/mxmtch.db')
+    conn = sqlite3.connect('mxmtch.db')
     cursor = conn.cursor()
 
     cursor.execute("SELECT ROWID, word from words")
@@ -33,7 +33,7 @@ def generate_input_array(lyric_rows, words):
     return input
 
 def fetch(track_id):
-    conn = sqlite3.connect('/Users/julio.barros/mxmtch.db')
+    conn = sqlite3.connect('mxmtch.db')
     cursor = conn.cursor()
 
     cursor.execute("SELECT * from lyrics where track_id = '" + track_id + "'")
